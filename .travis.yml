@@ -1,0 +1,18 @@
+language: go
+
+go:
+  - 1.x
+  - "1.10"
+  - 1.11.x
+  - 1.12.x
+  - 1.13.x
+
+go_import_path: github.com/CuCTeMeH/rss_reader
+
+before_install:
+  - cp ./.env.test.example.json ./.env.test.json
+  - cp ./.env.example.json ./.env.json
+  - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+  - dep ensure
+
+script: go test -v ./...

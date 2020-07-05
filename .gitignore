@@ -1,0 +1,4 @@
+.idea/**
+vendor/**
+.env.test.json
+.env.json
