@@ -7,6 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"os"
+	"time"
 )
 
 var settings *viper.Viper
@@ -35,4 +36,20 @@ var _ = Describe("Parser methods", func() {
 		items := parse(urls)
 		Expect(len(items)).To(Not(BeEquivalentTo(0)))
 	})
+
+	It("Test Stringer", func() {
+		item := RssItem{
+			Source:      "Source",
+			SourceURL:   "https://source.url",
+			Title:       "Title",
+			Description: "Description",
+			Link:        "https://source.url/link",
+			PublishDate: time.Now(),
+		}
+
+		str := item.String()
+
+		Expect(len(str)).To(Not(BeEquivalentTo(0)))
+	})
+
 })
