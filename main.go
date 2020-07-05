@@ -1,12 +1,15 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/CuCTeMeH/rss/reader"
 	"github.com/CuCTeMeH/rss_reader/config"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"io/ioutil"
 	"sync"
+	"time"
 )
 
 //Alias struct from the package rss.
@@ -31,8 +34,11 @@ func main() {
 	urls := config.GetLinks()
 	rssItems := parse(urls)
 
+	//Set filename of the json file that needs to be saved
+	filename := config.Settings.GetString("storage") + "/" + time.Now().Format(time.UnixDate) + ".json"
+
 	//Save the RSS items and print them concurrently.
-	err = saveAndPrintFeed(rssItems)
+	err = saveAndPrintFeed(rssItems, filename)
 	if err != nil {
 		logrus.WithError(err)
 	}
@@ -55,15 +61,16 @@ func parse(urls []string) []RssItem {
 }
 
 //Save and print the RSS Items concurrently using Wait Groups. Just to showcase workgroup concurrency, otherwise will make it simpler.
-func saveAndPrintFeed(rssItems []RssItem) error {
+func saveAndPrintFeed(rssItems []RssItem, filename string) error {
 	var wg sync.WaitGroup
-	wg.Add(1)
+	wg.Add(2)
 
 	//Set error channel so we can return error if needed.
 	errChan := make(chan error)
 	//Set wait group done channel so we know when the WaitGroup is done.
 	wgDone := make(chan bool)
 
+	go saveToFile(rssItems, filename, &wg, errChan)
 	go printToConsole(rssItems, &wg, errChan)
 
 	// Important final goroutine to wait until WaitGroup is done
@@ -97,5 +104,25 @@ func printToConsole(feed []RssItem, wg *sync.WaitGroup, errChan chan error) {
 
 	for _, v := range feed {
 		fmt.Println(v)
+	}
+}
+
+//Save the RSS Items to json files.
+func saveToFile(feed []RssItem, filename string, wg *sync.WaitGroup, errChan chan error) {
+	//Signal that we are done.
+	if wg != nil {
+		defer wg.Done()
+	}
+
+	//Marshal the struct to json.
+	jsonFeed, err := json.MarshalIndent(feed, "", " ")
+	if err != nil {
+		errChan <- err
+	}
+
+	//Store the json in the file.
+	err = ioutil.WriteFile(filename, jsonFeed, 0644)
+	if err != nil {
+		errChan <- err
 	}
 }
